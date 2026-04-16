@@ -1,6 +1,8 @@
 package com.example.filemanagerservice.service;
 
 import java.io.InputStream;
+import java.net.URL;
+import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -10,9 +12,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.example.filemanagerservice.dto.PresignedUrlRequest;
+import com.example.filemanagerservice.dto.PresignedUrlResponse;
 import com.example.filemanagerservice.dto.UploadEmailRequest;
 
 @Service
@@ -52,6 +58,35 @@ public class FileStorageService {
 
 		} catch (Exception e) {
 			throw new RuntimeException("Upload failed", e);
+		}
+	}
+
+	public PresignedUrlResponse generatePresignedUploadUrl(PresignedUrlRequest request) {
+		try {
+			String objectKey = System.currentTimeMillis() + "_" + request.getFileName();
+
+			Date expiration = new Date(System.currentTimeMillis() + 1000L * 60 * 10);
+
+			GeneratePresignedUrlRequest presignedRequest = new GeneratePresignedUrlRequest(bucketName, objectKey)
+					.withMethod(HttpMethod.PUT).withExpiration(expiration);
+
+			if (request.getContentType() != null && !request.getContentType().isBlank()) {
+				presignedRequest.setContentType(request.getContentType());
+			}
+
+			URL uploadUrl = amazonS3.generatePresignedUrl(presignedRequest);
+			String fileUrl = amazonS3.getUrl(bucketName, objectKey).toString();
+
+			PresignedUrlResponse response = new PresignedUrlResponse();
+			response.setUploadUrl(uploadUrl.toString());
+			response.setFileUrl(fileUrl);
+			response.setObjectKey(objectKey);
+			response.setMessage("Presigned upload URL generated successfully.");
+
+			return response;
+
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to generate presigned URL", e);
 		}
 	}
 
