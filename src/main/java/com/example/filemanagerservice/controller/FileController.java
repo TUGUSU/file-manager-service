@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.filemanagerservice.dto.FileUploadResponse;
+import com.example.filemanagerservice.dto.NotifyUploadRequest;
 import com.example.filemanagerservice.dto.PresignedUrlRequest;
 import com.example.filemanagerservice.dto.PresignedUrlResponse;
 import com.example.filemanagerservice.service.FileStorageService;
@@ -83,5 +84,24 @@ public class FileController {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to generate presigned URL.");
 		}
+	}
+
+	@PostMapping("/notify-upload-success")
+	public ResponseEntity<String> notifyUploadSuccess(@RequestHeader("Authorization") String authHeader,
+			@RequestBody NotifyUploadRequest request) {
+
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+			return ResponseEntity.status(401).body("Unauthorized");
+		}
+
+		String token = authHeader.substring(7);
+
+		if (!soapTokenValidationService.validateToken(token)) {
+			return ResponseEntity.status(401).body("Invalid token");
+		}
+
+		fileStorageService.notifyUploadSuccess(request.getFileName(), request.getFileUrl());
+
+		return ResponseEntity.ok("Notification sent");
 	}
 }

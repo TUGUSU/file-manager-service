@@ -90,6 +90,27 @@ public class FileStorageService {
 		}
 	}
 
+	public void notifyUploadSuccess(String fileName, String fileUrl) {
+		try {
+			UploadEmailRequest request = new UploadEmailRequest();
+			request.setTo("tugusu3@gmail.com");
+			request.setUsername("Tugusu");
+			request.setFileName(fileName);
+			request.setFileUrl(fileUrl);
+
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_JSON);
+
+			HttpEntity<UploadEmailRequest> entity = new HttpEntity<>(request, headers);
+
+			RestTemplate restTemplate = new RestTemplate();
+			restTemplate.postForEntity(emailerServiceUrl + "/send-upload-success", entity, String.class);
+
+		} catch (Exception e) {
+			System.out.println("Failed to send upload success email: " + e.getMessage());
+		}
+	}
+
 	private void sendUploadSuccessEmail(String fileName, String fileUrl) {
 		try {
 			UploadEmailRequest request = new UploadEmailRequest();
